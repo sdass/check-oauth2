@@ -20,6 +20,9 @@
 		With Facebook: <a href="/login/facebook">click here</a>
 	</div>
 
+  <div>
+    With Github: <a href="/login/github">click here</a>
+  </div>
 
 </div>
 
@@ -42,7 +45,8 @@ angular.module("application", [])
 		}).controller("home", function($http, $location){
 			var self = this;
 			$http.get("/user").success(function(data){
-				self.user = data.userAuthentication.details.name;
+				//self.user = data.userAuthentication.details.name;
+				self.user = data.user;
 				self.authenticated = true;
 				
 			}).error(function(){ 
