@@ -55,8 +55,9 @@ public class CheckOauth2Application extends WebSecurityConfigurerAdapter {
 	}
 	
 	@RequestMapping({"/user", "/me"})
+	//@RequestMapping({"/user", "/mystuff"})
 	public Map<String, String> login(Principal principal, HttpServletRequest request){
-		System.out.println("login() method called . . .uri=" + request.getRequestURI());
+		System.out.println("login() method called . . .uri=" + request.getRequestURI() + " name=" + principal.getName());
 		Map<String, String> map = new LinkedHashMap<String, String>();
 		map.put("user", principal.getName());
 		return map;
@@ -82,43 +83,33 @@ public class CheckOauth2Application extends WebSecurityConfigurerAdapter {
 	
 		@Override
 		public void configure(HttpSecurity http) throws Exception {
-			// http.antMatcher("/me").authorizeRequests().anyRequest().authenticated();
-			http.antMatcher("/me").authorizeRequests().anyRequest().authenticated();
+			 http.antMatcher("/me").authorizeRequests().anyRequest().authenticated();
+			//http.antMatcher("/mystuff").authorizeRequests().anyRequest().authenticated();
 		}
 	}//class ends
 	
+
 	
 	//private CompositeFilter ssoFilter(){
 	private Filter ssoFilter(){
 		CompositeFilter compositeFilter = new CompositeFilter();
 		List<Filter> filters = new ArrayList<Filter>();
-		
 		//facebook filter
-		OAuth2ClientAuthenticationProcessingFilter facebookFilter = new OAuth2ClientAuthenticationProcessingFilter("/login/facebook");
-		//OAuth2RestTemplate facebookTemplate = new OAuth2RestTemplate(facebookAuthServer(), oAuth2ClientContext);
-		OAuth2RestTemplate facebookTemplate = new OAuth2RestTemplate(facebook().getClient(), oAuth2ClientContext);
-		facebookFilter.setRestTemplate(facebookTemplate);
-		//UserInfoTokenService -- constructor saying this client can access the resource on the url
-		//String userInfoEndpointUrl = facebookResource().getUserInfoUri();
-		String userInfoEndpointUrl = facebook().getResource().getUserInfoUri();
-		
-		String clientId = facebook().getClient().getClientId();
-		System.out.println("constructor args: " + "userInfoEndpointUrl=" + userInfoEndpointUrl + " clientId=" + clientId);
-		
-		facebookFilter.setTokenServices(new UserInfoTokenServices(userInfoEndpointUrl, clientId)); //(tokenServices);
+		Filter facebookFilter = ssoFilter(facebook(), "/login/facebook");
 		filters.add(facebookFilter);
-
 		//github filter
-		OAuth2ClientAuthenticationProcessingFilter githubFilter = new OAuth2ClientAuthenticationProcessingFilter("/login/github");
-		OAuth2RestTemplate githubTemplate = new OAuth2RestTemplate(github().getClient(), oAuth2ClientContext);
-		githubFilter.setRestTemplate(githubTemplate);
-		String userInfoEndpointGit = github().getResource().getUserInfoUri();
-		String clientIdGit = github().getClient().getClientId();
-		System.out.println("constructor args: " + "userInfoEndpointGit=" + userInfoEndpointGit + " clientIdGit=" + clientIdGit );
-		githubFilter.setTokenServices(new UserInfoTokenServices(userInfoEndpointGit, clientIdGit));
+		Filter githubFilter = ssoFilter(github(), "/login/github");
 		filters.add(githubFilter);
 		compositeFilter.setFilters(filters);
 		return compositeFilter;
+	}
+	
+	private OAuth2ClientAuthenticationProcessingFilter ssoFilter(ClientResources client, String path){
+		OAuth2ClientAuthenticationProcessingFilter filter = new OAuth2ClientAuthenticationProcessingFilter(path);
+		OAuth2RestTemplate restTemplate = new OAuth2RestTemplate(client.getClient(), oAuth2ClientContext);
+		filter.setRestTemplate(restTemplate);
+		filter.setTokenServices(new UserInfoTokenServices(client.getResource().getUserInfoUri(), client.getClient().getClientId()));
+		return filter;
 	}
 		
 
